@@ -53,3 +53,67 @@ class Options(object):
         self.parser.add_argument('--w_enc', type=float, default=1, help='Encoder loss weight.')
         self.isTrain = True
         self.opt = None
+
+    def parse(self):
+        self.opt = self.parser.parse_args()
+        self.opt.isTrain = self.isTrain
+
+        str_ids = self.opt.gpu_ids.split(',')
+        self.opt.gpu_ids = []
+        for str_id in str_ids:
+            id = int(str_id)
+            if id >= 0:
+                self.opt.gpu_ids.append(id)
+
+        if self.opt.device == 'gpu':
+            torch.cuda.set_device(self.opt.gpu_ids[0])
+
+        args = vars(self.opt)
+
+        if self.opt.name == 'experiment_name':
+            self.opt.name = "%s/%s" % (self.opt.model, self.opt.dataset)
+        expr_dir = os.path.join(self.opt.outf, self.opt.name, 'train')
+        test_dir = os.path.join(self.opt.outf, self.opt.name, 'test')
+
+        if not os.path.isdir(expr_dir):
+            os.makedirs(expr_dir)
+        if not os.path.isdir(test_dir):
+            os.makedirs(test_dir)
+
+        file_name = os.path.join(expr_dir, 'opt.txt')
+
+        with open(file_name, 'wt') as opt_file:
+            opt_file.write('------------ Options -------------\n')
+            for k, v in sorted(args.items()):
+                opt_file.write('%s: %s\n' % (str(k), str(v)))
+            opt_file.write('-------------- End ----------------\n')
+
+        return self.opt
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
