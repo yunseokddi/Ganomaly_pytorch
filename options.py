@@ -89,31 +89,3 @@ class Options(object):
             opt_file.write('-------------- End ----------------\n')
 
         return self.opt
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
