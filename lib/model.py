@@ -11,8 +11,8 @@ import torch.nn as nn
 import torch.utils.data
 import torchvision.utils as vutils
 
-from lib.networks import NetD, NetD, weights_init
-from lib.visualizer import Visualizer
+from networks import NetD, NetG, weights_init
+from visualizer import Visualizer
 
 
 class BaseModel(object):
@@ -115,3 +115,19 @@ class BaseModel(object):
                 self.save_weights(self.epoch)
             self.visualizer.print_current_performance(res, best_auc)
         print(">> Training model %s.[Done]" % self.name)
+
+class Ganomaly(BaseModel):
+    @property
+    def name(self): return 'Ganomaly'
+
+    def __init__(self, opt, dataloader):
+        super(Ganomaly, self).__init__(opt, dataloader)
+
+        self.epoch = 0
+        self.times = []
+        self.total_steps = 0
+
+        self.netg = NetG(self.opt).to(self.device)
+        self.netd = NetD(self.opt).to(self.device)
+        self.netg.apply(weights_init)
+        self.netd.apply(weights_init)
