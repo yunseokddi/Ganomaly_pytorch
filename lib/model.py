@@ -13,6 +13,7 @@ import torchvision.utils as vutils
 
 from networks import NetD, NetG, weights_init
 from visualizer import Visualizer
+from loss import l2_loss
 
 
 class BaseModel(object):
@@ -116,9 +117,11 @@ class BaseModel(object):
             self.visualizer.print_current_performance(res, best_auc)
         print(">> Training model %s.[Done]" % self.name)
 
+
 class Ganomaly(BaseModel):
     @property
-    def name(self): return 'Ganomaly'
+    def name(self):
+        return 'Ganomaly'
 
     def __init__(self, opt, dataloader):
         super(Ganomaly, self).__init__(opt, dataloader)
@@ -131,3 +134,48 @@ class Ganomaly(BaseModel):
         self.netd = NetD(self.opt).to(self.device)
         self.netg.apply(weights_init)
         self.netd.apply(weights_init)
+
+        if self.opt.resume != '':
+            print("\nLoading pre-trained networks.")
+            self.opt.iter = torch.load(os.path.join(self.opt.resume, 'netG.pth'))['epoch']
+            self.netg.load_state_dict(torch.load(os.path.join(self.opt.resume, 'netG.pth'))['state_dict'])
+            self.netd.load_state_dict(torch.load(os.path.join(self.opt.resume, 'netD.pth'))['state_dict'])
+
+        self.l_adv = l2_loss
+        self.l_con = nn.L1Loss()
+        self.l_enc = l2_loss
+        self.l_bce = nn.BCELoss()
+
+        # Initialize input tensors.
+        self.input = torch.empty(size=(self.opt.batchsize, 3, self.opt.isize, self.opt.isize), dtype=torch.float32,
+                                 device=self.device)
+        self.label = torch.empty(size=(self.opt.batchsize,), dtype=torch.float32, device=self.device)
+        self.gt = torch.empty(size=(opt.batchsize,), dtype=torch.long, device=self.device)
+        self.fixed_input = torch.empty(size=(self.opt.batchsize, 3, self.opt.isize, self.opt.isize),
+                                       dtype=torch.float32, device=self.device)
+        self.real_label = torch.ones(size=(self.opt.batchsize,), dtype=torch.float32, device=self.device)
+        self.fake_label = torch.ones(size=(self.opt.batchsize,), dtype=torch.float32, device=self.device)
+
+        # Setup optimizer
+        if self.opt.isTrain:
+            self.netg.train()
+            self.netd.train()
+            self.optimizer_d = optim.Adam(self.netd.parameters(), lr=self.opt.lr, betas=(self.opt.beta1, 0.999))
+            self.optimizer_g = optim.Adam(self.netd.parameters(), lr=self.opt.lr, betas=(self.opt.beta1, 0.999))
+
+    def forward_g(self):
+        self.fake, self.latent_i, self.latent_o = self.netg(self.input)
+
+    def forward_d(self):
+        self.pred_real, self.feat_real = self.netd(self.input)
+        self.pred_fake, self.feat_fake = self.netd(self.fake.detach())
+
+    def backward_g(self):
+        self.err_g_adv = self.l_adv(self.netd(self.input)[1], self.netd(self.fake)[1])
+        self.err_g_con = self.l_con(self.fake, self.input)
+        self.err_g_enc = self.l_enc(self.latent_o, self.latent_i)
+        self.err_g = self.err_g_adv * self.opt.w_adv + self.err_g_con * self.opt.w_con + self.err_g_enc * self.opt.w_enc
+        self.err_g.backward(retain_graph=True)
+
+    def backward_d(self):
+
