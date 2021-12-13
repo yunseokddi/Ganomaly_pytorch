@@ -11,9 +11,9 @@ import torch.nn as nn
 import torch.utils.data
 import torchvision.utils as vutils
 
-from networks import NetD, NetG, weights_init
-from visualizer import Visualizer
-from loss import l2_loss
+from .networks import NetD, NetG, weights_init
+from .visualizer import Visualizer
+from .loss import l2_loss
 
 
 class BaseModel(object):
@@ -117,6 +117,8 @@ class BaseModel(object):
             self.visualizer.print_current_performance(res, best_auc)
         print(">> Training model %s.[Done]" % self.name)
 
+    def test(self):
+        pass
 
 class Ganomaly(BaseModel):
     @property
@@ -178,4 +180,33 @@ class Ganomaly(BaseModel):
         self.err_g.backward(retain_graph=True)
 
     def backward_d(self):
+        # Real - Fake Loss
+        self.err_d_real = self.l_bce(self.pred_real, self.real_label)
+        self.err_d_fake = self.l_bce(self.pred_fake, self.fake_label)
 
+        # NetD Loss & Backward-Pass
+        self.err_d = (self.err_d_real + self.err_d_fake) * 0.5
+        self.err_d.backward()
+
+    def reinit_d(self):
+        self.netd.apply(weights_init)
+        print('   Reloading net d')
+
+    def optimize_params(self):
+        # Forward-pss
+        self.forward_g()
+        self.forward_d()
+
+        # Backward-pass
+        # Net G
+        self.optimizer_g.zero_grad()
+        self.backward_g()
+        self.optimizer_g.step()
+
+        # Net D
+        self.optimizer_d.zero_grad()
+        self.backward_d()
+        self.optimizer_d.step()
+
+        if self.err_d.item() < 1e-5:
+            self.reinit_d()
