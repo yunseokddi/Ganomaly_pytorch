@@ -1,10 +1,8 @@
-import os
 import torch
 import numpy as np
 import torchvision.transforms as transforms
 
 from torchvision.datasets import ImageFolder
-from harness_options import Options
 
 
 # 0 : Defect
@@ -21,8 +19,8 @@ def load_data(opt):
     ])
 
     dataset = {}
-    dataset['train'] = ImageFolder(root='../../data/harness_paper_dataset/sample/train/', transform=transform)
-    dataset['test'] = ImageFolder(root='../../data/harness_paper_dataset/sample/test/', transform=transform)
+    dataset['train'] = ImageFolder(root='../data/harness_paper_dataset/sample/train/', transform=transform)
+    dataset['test'] = ImageFolder(root='../data/harness_paper_dataset/sample/test/', transform=transform)
 
     dataloader = {x: torch.utils.data.DataLoader(dataset=dataset[x],
                                                  batch_size=opt.batchsize,

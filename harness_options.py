@@ -10,6 +10,7 @@ import argparse
 import os
 import torch
 
+
 # pylint: disable=C0103,C0301,R0903,W0622
 
 class Options():
@@ -42,16 +43,24 @@ class Options():
         self.parser.add_argument('--ngpu', type=int, default=1, help='number of GPUs to use')
         self.parser.add_argument('--name', type=str, default='experiment_name', help='name of the experiment')
         self.parser.add_argument('--model', type=str, default='ganomaly', help='chooses which model to use. ganomaly')
+        self.parser.add_argument('--display_server', type=str, default="http://localhost",
+                                 help='visdom server of the web display')
+        self.parser.add_argument('--display_port', type=int, default=8097, help='visdom port of the web display')
+        self.parser.add_argument('--display_id', type=int, default=0, help='window id of the web display')
+        self.parser.add_argument('--display', action='store_true', help='Use visdom.')
         self.parser.add_argument('--outf', default='./output', help='folder to output images and model checkpoints')
         self.parser.add_argument('--manualseed', default=-1, type=int, help='manual seed')
-        self.parser.add_argument('--abnormal_class', default='car', help='Anomaly class idx for mnist and cifar datasets')
+        self.parser.add_argument('--abnormal_class', default='car',
+                                 help='Anomaly class idx for mnist and cifar datasets')
         self.parser.add_argument('--proportion', type=float, default=0.1, help='Proportion of anomalies in test set.')
         self.parser.add_argument('--metric', type=str, default='roc', help='Evaluation metric.')
 
         ##
         # Train
-        self.parser.add_argument('--print_freq', type=int, default=100, help='frequency of showing training results on console')
-        self.parser.add_argument('--save_image_freq', type=int, default=100, help='frequency of saving real and fake images')
+        self.parser.add_argument('--print_freq', type=int, default=100,
+                                 help='frequency of showing training results on console')
+        self.parser.add_argument('--save_image_freq', type=int, default=100,
+                                 help='frequency of saving real and fake images')
         self.parser.add_argument('--save_test_images', action='store_true', help='Save test images for demo.')
         self.parser.add_argument('--load_weights', action='store_true', help='Load the pretrained weights')
         self.parser.add_argument('--resume', default='', help="path to checkpoints (to continue training)")
@@ -71,7 +80,7 @@ class Options():
         """
 
         self.opt = self.parser.parse_args()
-        self.opt.isTrain = self.isTrain   # train or test
+        self.opt.isTrain = self.isTrain  # train or test
 
         str_ids = self.opt.gpu_ids.split(',')
         self.opt.gpu_ids = []
